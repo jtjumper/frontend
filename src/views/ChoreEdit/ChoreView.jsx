@@ -60,6 +60,11 @@ import {
 import { useCircleMembers, useUserProfile } from '../../queries/UserQueries.jsx'
 import { useNotification } from '../../service/NotificationProvider'
 import {
+  getCounterDisplayName,
+  getRemainingCount,
+  isCountedChore,
+} from '../../utils/ChoreCounter.js'
+import {
   ChoreHistoryStatus,
   ChoreStatus,
   notInCompletionWindow,
@@ -140,6 +145,7 @@ const ChoreView = () => {
   const [infoCards, setInfoCards] = useState([])
   const { choreId } = useParams()
   const [note, setNote] = useState(null)
+  const [progressCount, setProgressCount] = useState('')
   const queryClient = useQueryClient()
   const { showError, showSuccess, showUndo } = useNotification()
 
@@ -161,7 +167,7 @@ const ChoreView = () => {
     choreId: chore?.id,
   })
   const { after: titleAfterLink, before: titleBeforeLink } =
-    splitTextAtFirstLink(chore.name)
+    splitTextAtFirstLink(getCounterDisplayName(chore))
   const displayName = `${titleBeforeLink}${titleAfterLink}`.trim()
   const externalLinks = [
     ...new Map(
@@ -286,19 +292,24 @@ const ChoreView = () => {
       })
       .catch(error => showError({ message: error.message }))
   }
-  const handleTaskCompletion = async () => {
+  const handleTaskCompletion = async (completeAll = false) => {
+    const body = impersonatedUser
+      ? { completedBy: impersonatedUser.userId, note }
+      : { note }
+    if (isCountedChore(chore) && completeAll !== true && progressCount !== '') {
+      const n = Number(progressCount)
+      if (!Number.isInteger(n) || n <= 0) {
+        showError({ message: 'Enter a whole number greater than 0' })
+        return
+      }
+      body.count = n
+    }
     try {
-      const resp = await MarkChoreComplete(
-        choreId,
-        impersonatedUser
-          ? { completedBy: impersonatedUser.userId, note }
-          : { note },
-        completedDate,
-        null,
-      )
+      const resp = await MarkChoreComplete(choreId, body, completedDate, null)
       if (resp.ok) {
         const data = await resp.json()
         setNote(null)
+        setProgressCount('')
         setChore(data.res)
         queryClient.invalidateQueries({ queryKey: ['chores'] })
         const detailResp = await GetChoreDetailById(choreId)
@@ -1404,6 +1415,49 @@ const ChoreView = () => {
               setCompletedDate(e.target.value)
             }}
           />
+        )}
+
+        {isCountedChore(chore) && chore.isActive !== false && (
+          <Box sx={{ my: 1.5 }}>
+            <Typography level='body-sm' sx={{ mb: 0.5 }}>
+              How many did you do? ({getRemainingCount(chore)} of{' '}
+              {chore.targetCount} left)
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Input
+                type='number'
+                aria-label='How many did you do?'
+                placeholder={`${getRemainingCount(chore)}`}
+                slotProps={{
+                  input: { min: 1, max: getRemainingCount(chore), step: 1 },
+                }}
+                value={progressCount}
+                onChange={e => setProgressCount(e.target.value)}
+                sx={{ maxWidth: 160 }}
+                disabled={
+                  !permissions.complete ||
+                  chore.status === ChoreStatus.PENDING_APPROVAL
+                }
+              />
+              <Button
+                variant='outlined'
+                onClick={() => handleTaskCompletion(true)}
+                disabled={
+                  !permissions.complete ||
+                  chore.status === ChoreStatus.PENDING_APPROVAL
+                }
+              >
+                Complete all
+              </Button>
+            </Box>
+            <Typography
+              level='body-xs'
+              textColor='text.tertiary'
+              sx={{ mt: 0.5 }}
+            >
+              Leave empty and press Done to complete everything that remains.
+            </Typography>
+          </Box>
         )}
 
         {chore.isActive === false ? (

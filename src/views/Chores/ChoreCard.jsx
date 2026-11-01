@@ -34,6 +34,7 @@ import {
   getDueDateChipText,
   getRecurrentChipText,
 } from '../../utils/ChoreCardHelpers.jsx'
+import { getCounterDisplayName } from '../../utils/ChoreCounter.js'
 import { notInCompletionWindow } from '../../utils/Chores.jsx'
 import { getTextColorFromBackgroundColor } from '../../utils/Colors.jsx'
 import {
@@ -96,14 +97,14 @@ const ChoreCard = ({
     }
   }
   const getName = name => {
-    const split = Array.from(chore.name)
+    const split = Array.from(name)
     // if the first character is emoji then remove it from the name
     if (isNaN(Number(split[0])) && /\p{Emoji}/u.test(split[0])) {
       return split.slice(1).join('').trim()
     }
     return name
   }
-  const displayName = getName(chore.name)
+  const displayName = getName(getCounterDisplayName(chore))
   const {
     after: titleAfterLink,
     before: titleBeforeLink,

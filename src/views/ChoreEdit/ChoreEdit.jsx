@@ -196,6 +196,7 @@ const ChoreEdit = () => {
   const [completionActions, setCompletionActions] = useState([])
   const [completionActionsValid, setCompletionActionsValid] = useState(true)
   const [points, setPoints] = useState(-1)
+  const [targetCount, setTargetCount] = useState('')
   const [requireApproval, setRequireApproval] = useState(false)
   const [isPrivate, setIsPrivate] = useState(false)
   const [subTasks, setSubTasks] = useState(null)
@@ -665,6 +666,10 @@ const ChoreEdit = () => {
       thingTrigger: thingTrigger,
       completionActions,
       points: points < 0 ? null : points,
+      targetCount:
+        targetCount !== '' && Number(targetCount) > 0
+          ? Math.floor(Number(targetCount))
+          : null,
       requireApproval: requireApproval,
       isPrivate: isPrivate,
       completionWindow:
@@ -867,6 +872,7 @@ const ChoreEdit = () => {
         data.res.points != null && data.res.points >= 0 ? data.res.points : -1,
       )
       setRequireApproval(data.res.requireApproval || false)
+      setTargetCount(data.res.targetCount ? String(data.res.targetCount) : '')
       setIsPrivate(data.res.isPrivate || false)
       setCompletionWindow(
         data.res.completionWindow && data.res.completionWindow > -1
@@ -1451,6 +1457,23 @@ const ChoreEdit = () => {
                     onChange={e => setName(e.target.value)}
                   />
                   <FormHelperText error>{errors.name}</FormHelperText>
+                </FormControl>
+                <FormControl sx={{ mt: 1.5 }}>
+                  <Typography level='body-sm'>Count (optional)</Typography>
+                  <Input
+                    type='number'
+                    aria-label='Target count'
+                    placeholder='e.g. 30'
+                    slotProps={{ input: { min: 1, step: 1 } }}
+                    value={targetCount}
+                    onChange={e => setTargetCount(e.target.value)}
+                    sx={{ maxWidth: 200 }}
+                  />
+                  <FormHelperText>
+                    Track partial progress, e.g. "Pick up 30 items". Use
+                    {' {count} '}in the name to control where the remaining
+                    number appears.
+                  </FormHelperText>
                 </FormControl>
               </Box>
             </EditorSection>

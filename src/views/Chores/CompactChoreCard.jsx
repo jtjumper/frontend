@@ -23,6 +23,7 @@ import {
   getDueDateChipText,
   getRecurrentChipText,
 } from '../../utils/ChoreCardHelpers.jsx'
+import { getCounterDisplayName } from '../../utils/ChoreCounter.js'
 import { notInCompletionWindow } from '../../utils/Chores.jsx'
 import {
   getPriorityColor,
@@ -128,7 +129,7 @@ const CompactChoreCard = ({
     after: titleAfterLink,
     before: titleBeforeLink,
     link: titleLink,
-  } = splitTextAtFirstLink(chore.name)
+  } = splitTextAtFirstLink(getCounterDisplayName(chore))
   const descriptionLink = getFirstLink(chore.description)
   const showDescriptionLink =
     descriptionLink && descriptionLink.href !== titleLink?.href
